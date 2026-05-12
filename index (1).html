@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBIS · Nebius Intelligence Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #08090c;
+  --surface: #0f1117;
+  --surface2: #161820;
+  --surface3: #1c1f2b;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.10);
+  --text: #f0f0f2;
+  --text2: #8a8fa8;
+  --text3: #555a72;
+  --accent: #4f8ef7;
+  --accent2: #7ab3ff;
+  --green: #34d399;
+  --red: #f87171;
+  --amber: #fbbf24;
+  --purple: #a78bfa;
+  --teal: #2dd4bf;
+  --font-display: 'Syne', sans-serif;
+  --font-serif: 'Instrument Serif', serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 18px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* GRID BACKGROUND */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* GLOW ORBS */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.orb-1 { width: 600px; height: 600px; background: rgba(79,142,247,0.06); top: -200px; right: -100px; }
+.orb-2 { width: 400px; height: 400px; background: rgba(167,139,250,0.04); bottom: 200px; left: -100px; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+/* LAYOUT */
+.wrapper { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+/* NAV */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(8,9,12,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-logo-mark {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+.nav-brand { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
+.nav-ticker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.nav-links { display: flex; gap: 4px; }
+.nav-link {
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+  font-weight: 500;
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); }
+.nav-link.active { color: var(--accent2); background: rgba(79,142,247,0.08); }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.live-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--green);
+  background: rgba(52,211,153,0.08);
+  border: 1px solid rgba(52,211,153,0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: livePulse 2s infinite;
+}
+@keyframes livePulse {
+  0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,153,0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(52,211,153,0); }
+}
+.nav-time { font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
+
+/* HERO */
+.hero {
+  padding: 64px 0 48px;
+  animation: fadeUp 0.6s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.eyebrow-line {
+  width: 32px;
+  height: 1px;
+  background: var(--accent);
+}
+.eyebrow-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--accent2);
+  text-transform: uppercase;
+}
+.hero-title {
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1.05;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.hero-title span {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent2);
+}
+.hero-sub {
+  font-size: 15px;
+  color: var(--text2);
+  max-width: 520px;
+  line-height: 1.7;
+  margin-bottom: 32px;
+  font-weight: 400;
+}
+
+/* PRICE STRIP */
+.price-strip {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.price-main {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.price-val {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  color: var(--text);
+  line-height: 1;
+}
+.price-change {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--green);
+  font-family: var(--font-mono);
+}
+.price-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border2);
+}
+.price-stat { display: flex; flex-direction: column; gap: 2px; }
+.price-stat-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; }
+.price-stat-val { font-size: 16px; font-weight: 700; color: var(--text); }
+.price-stat-val.up { color: var(--green); }
+.price-stat-val.accent { color: var(--accent2); }
+
+/* TABS */
+.tabs-bar {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+  position: sticky;
+  top: 60px;
+  z-index: 50;
+  background: rgba(8,9,12,0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding-top: 4px;
+}
+.tab-btn {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text3);
+  cursor: pointer;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  font-family: var(--font-display);
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.tab-btn:hover { color: var(--text2); }
+.tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+/* PANELS */
+.panel { display: none; animation: fadeUp 0.3s ease both; }
+.panel.active { display: block; }
+
+/* METRIC GRID */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.metric-card:hover { border-color: var(--border2); }
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.metric-card:hover::before { opacity: 0.4; }
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.metric-val {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.metric-val.up { color: var(--green); }
+.metric-val.accent { color: var(--accent2); }
+.metric-delta { font-size: 12px; color: var(--text3); }
+.metric-delta.up { color: var(--green); }
+
+/* SECTION HEADER */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  margin-top: 32px;
+}
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+.section-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+/* CATALYST LIST */
+.catalyst-list { display: flex; flex-direction: column; gap: 8px; }
+.catalyst-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  transition: all 0.2s;
+  cursor: default;
+}
+.catalyst-item:hover {
+  border-color: var(--border2);
+  background: var(--surface2);
+}
+.catalyst-item.critical { border-left: 3px solid var(--red); }
+.catalyst-item.high { border-left: 3px solid var(--amber); }
+.catalyst-item.medium { border-left: 3px solid var(--accent); }
+.catalyst-item.ongoing { border-left: 3px solid var(--green); }
+.catalyst-num-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+.catalyst-content { flex: 1; }
+.catalyst-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.catalyst-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.catalyst-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.catalyst-right { text-align: right; flex-shrink: 0; }
+.catalyst-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+/* BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.badge-red { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.badge-amber { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+.badge-green { background: rgba(52,211,153,0.1); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+.badge-blue { background: rgba(79,142,247,0.12); color: var(--accent2); border: 1px solid rgba(79,142,247,0.2); }
+.badge-purple { background: rgba(167,139,250,0.12); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+.badge-gray { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+
+/* CHART AREA */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+.chart-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.chart-sub { font-size: 12px; color: var(--text3); }
+.chart-legend { display: flex; gap: 16px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* NEWS FEED */
+.news-list { display: flex; flex-direction: column; gap: 8px; }
+.news-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  transition: border-color 0.2s;
+}
+.news-item:hover { border-color: var(--border2); }
+.news-source {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  width: 80px;
+  margin-top: 2px;
+}
+.news-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; line-height: 1.5; }
+.news-meta { font-size: 11px; color: var(--text3); }
+.news-impact { margin-left: auto; flex-shrink: 0; }
+
+/* TWO COLUMN */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* EARNINGS PANEL */
+.earnings-header-card {
+  background: linear-gradient(135deg, rgba(79,142,247,0.08), rgba(167,139,250,0.06));
+  border: 1px solid rgba(79,142,247,0.2);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.earnings-date-block { }
+.earnings-date-label { font-family: var(--font-mono); font-size: 11px; color: var(--accent2); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+.earnings-date-val { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: var(--text); margin-bottom: 4px; }
+.earnings-date-sub { font-size: 13px; color: var(--text2); }
+.countdown-ring { text-align: center; }
+.countdown-num { font-size: 52px; font-weight: 800; color: var(--accent); letter-spacing: -3px; line-height: 1; font-family: var(--font-mono); }
+.countdown-unit { font-family: var(--font-mono); font-size: 11px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* SCENARIO CARDS */
+.scenario-card {
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  border: 1px solid;
+}
+.scenario-card.bear {
+  background: rgba(248,113,113,0.04);
+  border-color: rgba(248,113,113,0.2);
+}
+.scenario-card.base {
+  background: rgba(79,142,247,0.04);
+  border-color: rgba(79,142,247,0.2);
+}
+.scenario-card.bull {
+  background: rgba(52,211,153,0.04);
+  border-color: rgba(52,211,153,0.2);
+}
+.scenario-type {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.scenario-card.bear .scenario-type { color: var(--red); }
+.scenario-card.base .scenario-type { color: var(--accent2); }
+.scenario-card.bull .scenario-type { color: var(--green); }
+.scenario-pt { font-size: 36px; font-weight: 800; letter-spacing: -2px; color: var(--text); margin-bottom: 16px; }
+.scenario-item { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--text2); line-height: 1.5; }
+.scenario-dot { width: 4px; height: 4px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; }
+.scenario-card.bear .scenario-dot { background: var(--red); }
+.scenario-card.base .scenario-dot { background: var(--accent); }
+.scenario-card.bull .scenario-dot { background: var(--green); }
+.scenario-prob {
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.prob-bar { height: 3px; border-radius: 2px; margin-top: 8px; }
+.scenario-card.bear .prob-bar { background: var(--red); }
+.scenario-card.base .prob-bar { background: var(--accent); }
+.scenario-card.bull .prob-bar { background: var(--green); }
+
+/* ANALYST CARDS */
+.analyst-grid { display: flex; flex-direction: column; gap: 10px; }
+.analyst-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: border-color 0.2s;
+}
+.analyst-card:hover { border-color: var(--border2); }
+.analyst-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.analyst-body { flex: 1; }
+.analyst-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.analyst-firm { font-size: 14px; font-weight: 700; color: var(--text); }
+.analyst-pt { font-family: var(--font-mono); font-size: 12px; color: var(--text3); }
+.analyst-note { font-size: 13px; color: var(--text2); line-height: 1.6; margin-top: 6px; }
+.analyst-right { text-align: right; }
+.analyst-rating-val { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+
+/* AI ANALYSIS BOX */
+.ai-box {
+  background: var(--surface);
+  border: 1px solid rgba(79,142,247,0.2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-top: 24px;
+}
+.ai-box-header {
+  background: rgba(79,142,247,0.06);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(79,142,247,0.12);
+}
+.ai-header-left { display: flex; align-items: center; gap: 10px; }
+.ai-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.ai-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.ai-sub { font-size: 11px; color: var(--text3); }
+.ai-box-body { padding: 20px; }
+.ai-content-text {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.8;
+  min-height: 80px;
+}
+.ai-content-text b, .ai-content-text strong { color: var(--text); font-weight: 600; }
+.ai-loading-wrap { display: flex; align-items: center; gap: 8px; }
+.ai-loading-text { font-size: 13px; color: var(--text3); }
+.dots { display: flex; gap: 4px; }
+.dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: dotBounce 1.4s infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+  0%,80%,100% { transform: scale(0.5); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.ai-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--accent2);
+  background: rgba(79,142,247,0.08);
+  border: 1px solid rgba(79,142,247,0.2);
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.ai-btn:hover {
+  background: rgba(79,142,247,0.15);
+  border-color: rgba(79,142,247,0.35);
+}
+.ai-btn-secondary {
+  color: var(--text3);
+  background: none;
+  border-color: var(--border);
+}
+.ai-btn-secondary:hover {
+  color: var(--text2);
+  background: var(--surface2);
+  border-color: var(--border2);
+}
+
+/* RISK TABLE */
+.risk-list { display: flex; flex-direction: column; gap: 8px; }
+.risk-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.risk-severity {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.risk-high { background: rgba(248,113,113,0.1); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.risk-med { background: rgba(251,191,36,0.1); color: var(--amber); border: 1px solid rgba(251,191,36,0.2); }
+.risk-low { background: rgba(52,211,153,0.08); color: var(--green); border: 1px solid rgba(52,211,153,0.15); }
+.risk-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.risk-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+/* PROGRESS */
+.progress-wrap { margin-top: 10px; }
+.progress-bar-bg { background: var(--surface2); border-radius: 2px; height: 4px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 1s ease; }
+.progress-labels { display: flex; justify-content: space-between; margin-top: 4px; }
+.progress-label { font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
+
+/* CONSENSUS ROW */
+.consensus-card {
+  background: linear-gradient(135deg, rgba(52,211,153,0.06), rgba(79,142,247,0.04));
+  border: 1px solid rgba(52,211,153,0.2);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.consensus-rating {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: -1px;
+}
+.consensus-divider { width: 1px; height: 50px; background: var(--border2); }
+.consensus-stat { }
+.consensus-stat-label { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+.consensus-stat-val { font-size: 18px; font-weight: 700; color: var(--text); }
+
+/* FOOTER */
+footer {
+  margin-top: 80px;
+  padding: 32px 0;
+  border-top: 1px solid var(--border);
+}
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-left { font-size: 12px; color: var(--text3); line-height: 1.7; }
+.footer-disclaimer { font-size: 11px; color: var(--text3); opacity: 0.6; max-width: 600px; line-height: 1.6; }
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .hero-title { font-size: 36px; letter-spacing: -1.5px; }
+  .price-strip { gap: 16px; }
+  .price-val { font-size: 36px; }
+  .earnings-header-card { flex-direction: column; }
+  .nav-links { display: none; }
+  .consensus-card { flex-direction: column; gap: 16px; }
+}
+
+/* STAGGER ANIMATIONS */
+.catalyst-item { animation: slideIn 0.4s ease both; }
+.catalyst-item:nth-child(1) { animation-delay: 0.05s; }
+.catalyst-item:nth-child(2) { animation-delay: 0.10s; }
+.catalyst-item:nth-child(3) { animation-delay: 0.15s; }
+.catalyst-item:nth-child(4) { animation-delay: 0.20s; }
+.catalyst-item:nth-child(5) { animation-delay: 0.25s; }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.metric-card { animation: fadeUp 0.4s ease both; }
+.metric-card:nth-child(1) { animation-delay: 0.05s; }
+.metric-card:nth-child(2) { animation-delay: 0.10s; }
+.metric-card:nth-child(3) { animation-delay: 0.15s; }
+.metric-card:nth-child(4) { animation-delay: 0.20s; }
+.metric-card:nth-child(5) { animation-delay: 0.25s; }
+.metric-card:nth-child(6) { animation-delay: 0.30s; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="wrapper">
+    <div class="nav-inner">
+      <div class="nav-logo">
+        <div class="nav-logo-mark">N</div>
+        <div>
+          <div class="nav-brand">Nebius Intelligence</div>
+        </div>
+        <div class="nav-ticker">NASDAQ: NBIS</div>
+      </div>
+      <div class="nav-links">
+        <button class="nav-link active" onclick="showTab('dashboard')">Dashboard</button>
+        <button class="nav-link" onclick="showTab('earnings')">Earnings</button>
+        <button class="nav-link" onclick="showTab('scenarios')">Scenarios</button>
+        <button class="nav-link" onclick="showTab('analysts')">Analytiker</button>
+        <button class="nav-link" onclick="showTab('risk')">Risk</button>
+      </div>
+      <div class="nav-right">
+        <div class="live-pill"><div class="live-dot"></div> LIVE</div>
+        <div class="nav-time" id="clock">--:--:--</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="wrapper">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">AI Infrastructure · Neocloud · Deep Dive</div>
+    </div>
+    <h1 class="hero-title">Nebius Group<br><span>Catalyst Tracker</span></h1>
+    <p class="hero-sub">Real-time intelligens om Nebius (NBIS) — katalysatorer, earnings, analytikervyer och scenariokalkyl. Uppdateras av Claude AI.</p>
+
+    <div class="price-strip">
+      <div class="price-main">
+        <div class="price-val">$189.20</div>
+        <div class="price-change">+14.03%</div>
+      </div>
+      <div class="price-divider"></div>
+      <div class="price-stat">
+        <div class="price-stat-label">YTD</div>
+        <div class="price-stat-val up">+133%</div>
+      </div>
+      <div class="price-divider"></div>
+      <div class="price-stat">
+        <div class="price-stat-label">1 År</div>
+        <div class="price-stat-val up">+431%</div>
+      </div>
+      <div class="price-divider"></div>
+      <div class="price-stat">
+        <div class="price-stat-label">Backlog</div>
+        <div class="price-stat-val accent">$50B</div>
+      </div>
+      <div class="price-divider"></div>
+      <div class="price-stat">
+        <div class="price-stat-label">Market Cap</div>
+        <div class="price-stat-val">$38.1B</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="showTab('earnings')">Earnings Q1</button>
+    <button class="tab-btn" onclick="showTab('scenarios')">Bear / Base / Bull</button>
+    <button class="tab-btn" onclick="showTab('analysts')">Analytiker</button>
+    <button class="tab-btn" onclick="showTab('risk')">Riskanalys</button>
+  </div>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <div id="panel-dashboard" class="panel active">
+
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">Kurs idag</div>
+        <div class="metric-val up">+14.0%</div>
+        <div class="metric-delta">ATH nivåer · $189.20</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Momentum Score</div>
+        <div class="metric-val accent">98.76</div>
+        <div class="metric-delta">Benzinga Edge · Max bullish</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">ARR 2026-mål</div>
+        <div class="metric-val">$7–9B</div>
+        <div class="metric-delta">2025: ~$1.2B uppnått</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Q4 YoY tillväxt</div>
+        <div class="metric-val up">547%</div>
+        <div class="metric-delta">Q4 2025 vs Q4 2024</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">NVIDIA-investering</div>
+        <div class="metric-val accent">$2B</div>
+        <div class="metric-delta">Mars 2026</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Value Score</div>
+        <div class="metric-val" style="color:var(--red);">1.83</div>
+        <div class="metric-delta" style="color:var(--red);">Extremt värderad</div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">NBIS Kursutveckling — 12 månader</div>
+          <div class="chart-sub">Schematisk rekonstruktion baserad på rapporterade data</div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>NBIS</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--text3)"></div>S&P 500</div>
+        </div>
+      </div>
+      <div style="position:relative; height:220px;">
+        <canvas id="priceChart" role="img" aria-label="Nebius NBIS aktiekurs 12 månader maj 2025 till maj 2026, +431%">Kurs ökade från ca $36 till $189, +431%.</canvas>
+      </div>
+    </div>
+
+    <!-- KATALYSATORER -->
+    <div class="section-header">
+      <div class="section-title">Kommande katalysatorer</div>
+      <div class="section-count">5 händelser</div>
+    </div>
+
+    <div class="catalyst-list">
+      <div class="catalyst-item critical">
+        <div class="catalyst-num-wrap">01</div>
+        <div class="catalyst-content">
+          <div class="catalyst-top">
+            <div class="catalyst-name">Q1 2026 Earnings</div>
+            <span class="badge badge-red">🔴 KRITISK · IMORGON</span>
+          </div>
+          <div class="catalyst-desc">Rapport 13 maj 2026 innan market open. Konsensus: $316.9M intäkter (+39% QoQ), EPS -$0.81. Tre fokuspunkter: ARR-bana mot $7–9B helårsmål, hyperscaler-uppdateringar (Meta/MSFT), Eigen AI-integrationstidslinje.</div>
+        </div>
+        <div class="catalyst-right">
+          <div class="catalyst-date">13 Maj 2026</div>
+        </div>
+      </div>
+
+      <div class="catalyst-item high">
+        <div class="catalyst-num-wrap">02</div>
+        <div class="catalyst-content">
+          <div class="catalyst-top">
+            <div class="catalyst-name">Eigen AI — Integration Update</div>
+            <span class="badge badge-amber">HÖG IMPACT</span>
+          </div>
+          <div class="catalyst-desc">$643M förvärv annonserat 1 maj 2026. Inference-optimeringsspecialist som möjliggör PaaS-skiftet. Synergier med Token Factory och Aether-plattformen är nyckeln till marginalexpansion. Integration update förväntas Q2.</div>
+        </div>
+        <div class="catalyst-right">
+          <div class="catalyst-date">Q2 2026</div>
+        </div>
+      </div>
+
+      <div class="catalyst-item ongoing">
+        <div class="catalyst-num-wrap">03</div>
+        <div class="catalyst-content">
+          <div class="catalyst-top">
+            <div class="catalyst-name">Meta $27B + Microsoft $19.4B</div>
+            <span class="badge badge-green">PÅGÅR</span>
+          </div>
+          <div class="catalyst-desc">Fleråriga hyperscaler-kontrakt som driver GPU-kapacitetsutrullning. Bolaget var sold out t.o.m. Q1 2026. Uppdateringar om deploy-takt och kapacitetsexpansion förväntas under earnings call.</div>
+        </div>
+        <div class="catalyst-right">
+          <div class="catalyst-date">Löpande</div>
+        </div>
+      </div>
+
+      <div class="catalyst-item medium">
+        <div class="catalyst-num-wrap">04</div>
+        <div class="catalyst-content">
+          <div class="catalyst-top">
+            <div class="catalyst-name">Nebius AI Cloud 3.5 — Adoption</div>
+            <span class="badge badge-blue">MEDIUM</span>
+          </div>
+          <div class="catalyst-desc">Lanserades mars 2026. Senaste uppgraderingen av Aether-plattformen med förbättrat developer tooling. 100% software attach rate för AI cloud-kunder. Adoptionsmått förväntas i Q1-rapporten.</div>
+        </div>
+        <div class="catalyst-right">
+          <div class="catalyst-date">Q2 2026</div>
+        </div>
+      </div>
+
+      <div class="catalyst-item medium">
+        <div class="catalyst-num-wrap">05</div>
+        <div class="catalyst-content">
+          <div class="catalyst-top">
+            <div class="catalyst-name">ARR Run-Rate mot $7–9B</div>
+            <span class="badge badge-purple">STRATEGISK</span>
+          </div>
+          <div class="catalyst-desc">$4.34B konvertibelt skuldinstrument finansierar aggressiv kapitalexpansion. Helårsmålet $7–9B ARR är marknadens primära repricing-trigger. Miss mot detta mål är den enskilt största kursrisken.</div>
+        </div>
+        <div class="catalyst-right">
+          <div class="catalyst-date">H2 2026</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI BOX -->
+    <div class="ai-box">
+      <div class="ai-box-header">
+        <div class="ai-header-left">
+          <div class="ai-icon">✦</div>
+          <div>
+            <div class="ai-title">AI Marknadsanalys — Live</div>
+            <div class="ai-sub">Genereras av Claude · Baserat på inbyggd NBIS-data</div>
+          </div>
+        </div>
+        <span class="badge badge-blue">claude-sonnet-4</span>
+      </div>
+      <div class="ai-box-body">
+        <div class="ai-content-text" id="ai-dashboard">
+          Klicka "Generera analys" för en uppdaterad AI-driven marknadsanalys av NBIS inför Q1-rapporten.
+        </div>
+        <div class="ai-actions">
+          <button class="ai-btn" onclick="fetchAI('dashboard')">✦ Generera analys</button>
+          <button class="ai-btn ai-btn-secondary" onclick="fetchAI('dashboard-deep')">Djupanalys</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== EARNINGS ===================== -->
+  <div id="panel-earnings" class="panel">
+    <div class="earnings-header-card">
+      <div class="earnings-date-block">
+        <div class="earnings-date-label">Nästa rapport</div>
+        <div class="earnings-date-val">Q1 2026 Earnings</div>
+        <div class="earnings-date-sub">13 Maj 2026 · Före market open · NASDAQ: NBIS</div>
+      </div>
+      <div class="countdown-ring">
+        <div class="countdown-num" id="countdown">1</div>
+        <div class="countdown-unit">Dag kvar</div>
+      </div>
+      <div>
+        <div style="margin-bottom:8px;"><span class="badge badge-red">KRITISK HÄNDELSE</span></div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;max-width:220px;">Aktien handlas vid ATH med fullprisat momentum. Alla ögon på ARR-trajektorin.</div>
+      </div>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">Intäkter · Konsensus</div>
+        <div class="metric-val accent">$316.9M</div>
+        <div class="metric-delta">Q4 var $227.7M (+39% QoQ)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">EPS · Konsensus</div>
+        <div class="metric-val" style="color:var(--red);">-$0.81</div>
+        <div class="metric-delta">Zacks · Oförändrat 30 dagar</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Earnings ESP</div>
+        <div class="metric-val">0.00%</div>
+        <div class="metric-delta">Neutral surprise-signal</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Analyst-rating</div>
+        <div class="metric-val up">Strong Buy</div>
+        <div class="metric-delta">12 analytiker</div>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:16px;">
+      <div class="section-title">Tre saker att bevaka</div>
+    </div>
+
+    <div class="catalyst-list">
+      <div class="catalyst-item ongoing">
+        <div class="catalyst-num-wrap">1</div>
+        <div class="catalyst-content">
+          <div class="catalyst-top"><div class="catalyst-name">ARR-bana</div><span class="badge badge-green">PRIMÄR TRIGGER</span></div>
+          <div class="catalyst-desc">Marknaden prissätter $7–9B helår ARR. En Q1 run-rate som pekar mot övre halvan av intervallet kan trigga ny repricing. Miss mot nedre gränsen är den enskilt största kursrisken.</div>
+          <div class="progress-wrap">
+            <div class="progress-bar-bg"><div class="progress-fill" style="width:17%"></div></div>
+            <div class="progress-labels">
+              <span class="progress-label">$1.2B uppnått (2025)</span>
+              <span class="progress-label">$7B mål</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="catalyst-item high">
+        <div class="catalyst-num-wrap">2</div>
+        <div class="catalyst-content">
+          <div class="catalyst-top"><div class="catalyst-name">Hyperscaler-deployments</div><span class="badge badge-amber">HÖG VIKT</span></div>
+          <div class="catalyst-desc">Operationella uppdateringar om Meta ($27B) och Microsoft ($19.4B) deploy-takt. GPU-kapacitetsexpansion, utilization-rates och pricing power under spot vs. reserverad kapacitet.</div>
+        </div>
+      </div>
+
+      <div class="catalyst-item medium">
+        <div class="catalyst-num-wrap">3</div>
+        <div class="catalyst-content">
+          <div class="catalyst-top"><div class="catalyst-name">Eigen AI — integration & synergier</div><span class="badge badge-blue">MEDIUM VIKT</span></div>
+          <div class="catalyst-desc">$643M förvärvet stängdes 1 maj. Marknaden vill höra konkret tidslinje för Token Factory-integration och estimat på marginalförbättringen från IaaS→PaaS-skiftet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EARNINGS CHART -->
+    <div class="chart-card" style="margin-top:24px;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Kvartalsvisa intäkter & tillväxt</div>
+          <div class="chart-sub">Q1 2025 – Q1 2026E (konsensus)</div>
+        </div>
+      </div>
+      <div style="position:relative; height:200px;">
+        <canvas id="revenueChart" role="img" aria-label="Kvartalsvisa intäkter Nebius, Q1 2025 till Q1 2026E">Intäkter ökar kvartalsvis kraftigt.</canvas>
+      </div>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-box-header">
+        <div class="ai-header-left">
+          <div class="ai-icon">✦</div>
+          <div>
+            <div class="ai-title">AI Earnings-prognos</div>
+            <div class="ai-sub">Beat vs miss-analys · Vad händer med kursen?</div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-box-body">
+        <div class="ai-content-text" id="ai-earnings">Generera en earnings-prognos för att se AI:s analys av möjliga utfall.</div>
+        <div class="ai-actions">
+          <button class="ai-btn" onclick="fetchAI('earnings')">✦ Generera earnings-prognos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCENARIOS ===================== -->
+  <div id="panel-scenarios" class="panel">
+
+    <div style="margin-bottom:24px;font-size:14px;color:var(--text2);line-height:1.7;">
+      Baserat på Seeking Alpha, Goldman Sachs, BofA, Benzinga Edge och Wolfe Research. Prismål avser 12–24 månaders horisont.
+    </div>
+
+    <div class="three-col">
+      <div class="scenario-card bear">
+        <div class="scenario-type">🐻 Bear Case</div>
+        <div class="scenario-pt">$60–90</div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Earnings besvikelse — ARR missar $7B-gränsen</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>GPU-prisfall när AWS/Azure/CoreWeave ökar kapacitet</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Eigen AI-integration tar 2+ år, synergier uteblir</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Value score 1.83 — behöver inte negativt, bara "OK"</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Konvertibel skuld skapar press om tillväxten bromsar</div></div>
+        <div class="scenario-prob">
+          Estimerad sannolikhet: 20%
+          <div class="prob-bar" style="width:20%"></div>
+        </div>
+      </div>
+
+      <div class="scenario-card base">
+        <div class="scenario-type">⚖️ Base Case</div>
+        <div class="scenario-pt">$145–190</div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>ARR landar i $6–7B, inline med lägre guidance</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Meta/MSFT-deployments i plan</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Eigen AI-integration tar 12–18 mån</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Aktien konsoliderar under nuvarande ATH-nivåer</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Analyst PT konvergerar runt $168–185</div></div>
+        <div class="scenario-prob">
+          Estimerad sannolikhet: 45%
+          <div class="prob-bar" style="width:45%"></div>
+        </div>
+      </div>
+
+      <div class="scenario-card bull">
+        <div class="scenario-type">🐂 Bull Case</div>
+        <div class="scenario-pt">$275–450</div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>ARR når $9B+ — toppen av guidance</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Eigen AI PaaS-marginalexpansion accelererar</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>Meta/MSFT utökar kontrakt utöver befintlig backlog</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>NVIDIA-validering attraherar fler hyperscalers</div></div>
+        <div class="scenario-item"><div class="scenario-dot"></div><div>SA: 42–138% 2-årsuppside vs nuvarande kurs</div></div>
+        <div class="scenario-prob">
+          Estimerad sannolikhet: 35%
+          <div class="prob-bar" style="width:35%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENARIO CHART -->
+    <div class="chart-card" style="margin-top:24px;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Prismål per scenario vs analytiker</div>
+          <div class="chart-sub">Jämförelse av bull/base/bear och analytikernas PT</div>
+        </div>
+      </div>
+      <div style="position:relative; height:200px;">
+        <canvas id="scenarioChart" role="img" aria-label="Prismål per scenario för Nebius NBIS">Bear: $75, Base: $168, Bull: $350, BofA/GS: $205.</canvas>
+      </div>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-box-header">
+        <div class="ai-header-left">
+          <div class="ai-icon">✦</div>
+          <div>
+            <div class="ai-title">AI Scenario-analys</div>
+            <div class="ai-sub">Djupgående bear/bull-bedömning med Claude</div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-box-body">
+        <div class="ai-content-text" id="ai-scenarios">Klicka nedan för en AI-driven djupanalys av NBIS:s scenarion.</div>
+        <div class="ai-actions">
+          <button class="ai-btn" onclick="fetchAI('scenarios')">✦ Analysera scenarion</button>
+          <button class="ai-btn ai-btn-secondary" onclick="fetchAI('scenarios-q1')">Vad händer imorgon?</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ANALYTIKER ===================== -->
+  <div id="panel-analysts" class="panel">
+
+    <div class="consensus-card">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Analytikerkonsensus</div>
+        <div class="consensus-rating">Strong Buy</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px;">12 analytiker täcker NBIS</div>
+      </div>
+      <div class="consensus-divider"></div>
+      <div class="consensus-stat">
+        <div class="consensus-stat-label">Snitt prismål</div>
+        <div class="consensus-stat-val">$168.50</div>
+      </div>
+      <div class="consensus-divider"></div>
+      <div class="consensus-stat">
+        <div class="consensus-stat-label">Högsta PT</div>
+        <div class="consensus-stat-val" style="color:var(--green);">$205</div>
+      </div>
+      <div class="consensus-divider"></div>
+      <div class="consensus-stat">
+        <div class="consensus-stat-label">Lägsta PT</div>
+        <div class="consensus-stat-val" style="color:var(--red);">N/A (Wolfe)</div>
+      </div>
+      <div class="consensus-divider"></div>
+      <div class="consensus-stat">
+        <div class="consensus-stat-label">Uppside vs snitt PT</div>
+        <div class="consensus-stat-val" style="color:var(--red);">-10.9%</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Analytikerbedömningar</div>
+      <div class="section-count">4 rapporterade</div>
+    </div>
+
+    <div class="analyst-grid">
+      <div class="analyst-card">
+        <div class="analyst-avatar" style="background:rgba(79,142,247,0.12);color:var(--accent2);">GS</div>
+        <div class="analyst-body">
+          <div class="analyst-header">
+            <div class="analyst-firm">Goldman Sachs</div>
+            <span class="badge badge-green">BUY</span>
+            <div class="analyst-pt">PT: $205 · Höjt +$45</div>
+          </div>
+          <div class="analyst-note">Höjde prismålet till $205 efter Meta AI-kontraktet på $27B. Betonar kontrakterade backlogs styrka och NVIDIA:s $2B-investerings validering av AI-infrastrukturthesen. Ser bolaget som fundamentalt välpositionerat för AI-supercykeln.</div>
+        </div>
+        <div class="analyst-right">
+          <div class="analyst-rating-val" style="color:var(--green);">$205</div>
+        </div>
+      </div>
+
+      <div class="analyst-card">
+        <div class="analyst-avatar" style="background:rgba(251,191,36,0.1);color:var(--amber);">BA</div>
+        <div class="analyst-body">
+          <div class="analyst-header">
+            <div class="analyst-firm">BofA Securities</div>
+            <span class="badge badge-green">BUY</span>
+            <div class="analyst-pt">PT: $205 · Höjt från $175</div>
+          </div>
+          <div class="analyst-note">Reitererade Buy och höjde PT inför Q1-rapporten. Ser GPU-kapacitetens supply-constraint som en strukturell prisfördel. Lång kontrakt-backlog ger synlighet och minimerar intäktsrisk på 12–18 månaders horisont.</div>
+        </div>
+        <div class="analyst-right">
+          <div class="analyst-rating-val" style="color:var(--green);">$205</div>
+        </div>
+      </div>
+
+      <div class="analyst-card">
+        <div class="analyst-avatar" style="background:rgba(167,139,250,0.1);color:var(--purple);">WR</div>
+        <div class="analyst-body">
+          <div class="analyst-header">
+            <div class="analyst-firm">Wolfe Research</div>
+            <span class="badge badge-gray">PEER PERFORM</span>
+            <div class="analyst-pt">Inledde täckning · Ingen PT</div>
+          </div>
+          <div class="analyst-note">Analyst Arsenije Matovic inledde täckning med neutral rating. Bedömer efterfrågehistorien som bevisad och avrisifierad, men anser att aktien prissätter in majoriteten av möjligheten vid nuvarande nivåer. Avvaktar bättre entry.</div>
+        </div>
+        <div class="analyst-right">
+          <div class="analyst-rating-val" style="color:var(--text3);">–</div>
+        </div>
+      </div>
+
+      <div class="analyst-card">
+        <div class="analyst-avatar" style="background:rgba(52,211,153,0.1);color:var(--green);">SA</div>
+        <div class="analyst-body">
+          <div class="analyst-header">
+            <div class="analyst-firm">Seeking Alpha (konsensus)</div>
+            <span class="badge badge-green">BULLISH</span>
+            <div class="analyst-pt">2-årshorisont · Top Neocloud Pick</div>
+          </div>
+          <div class="analyst-note">Rankar NBIS som toppval inom neocloud-segmentet. Modellerar 42–138% uppside på 2 år beroende på marknadens vilja att omvärdera bolaget för execution. IaaS→PaaS-skiftet via Eigen AI är pivotalt och kan driva multipelexpansion.</div>
+        </div>
+        <div class="analyst-right">
+          <div class="analyst-rating-val" style="color:var(--green);">138%↑</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYST CHART -->
+    <div class="chart-card" style="margin-top:24px;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Prismål vs nuvarande kurs</div>
+          <div class="chart-sub">Per analytiker · Referenslinje vid $189.20</div>
+        </div>
+      </div>
+      <div style="position:relative; height:180px;">
+        <canvas id="analystChart" role="img" aria-label="Analytiker prismål vs nuvarande kurs NBIS">GS $205, BofA $205, Snitt $168.5, Kurs $189.</canvas>
+      </div>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-box-header">
+        <div class="ai-header-left">
+          <div class="ai-icon">✦</div>
+          <div>
+            <div class="ai-title">AI · Analytikerkonsensus-syntes</div>
+            <div class="ai-sub">Vad analytikerna sammantaget signalerar om NBIS</div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-box-body">
+        <div class="ai-content-text" id="ai-analysts">Klicka nedan för att AI ska syntetisera analytikervyerna.</div>
+        <div class="ai-actions">
+          <button class="ai-btn" onclick="fetchAI('analysts')">✦ Syntetisera analytikervyer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== RISK ===================== -->
+  <div id="panel-risk" class="panel">
+
+    <div style="margin-bottom:24px;font-size:14px;color:var(--text2);line-height:1.7;">
+      Riskprofil för NBIS per maj 2026. Aktien handlas vid ATH med extremt momentum men låg värderingsbuffert.
+    </div>
+
+    <!-- RISK CHART -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Risk/möjlighets-profil</div>
+          <div class="chart-sub">Radar-analys av nyckelriskdimensioner (1–10)</div>
+        </div>
+      </div>
+      <div style="position:relative; height:260px;">
+        <canvas id="radarChart" role="img" aria-label="Radar chart för NBIS riskprofil">Värderingsrisk hög, tillväxtmöjlighet hög, exekutionsrisk medel.</canvas>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Riskfaktorer</div>
+    </div>
+
+    <div class="risk-list">
+      <div class="risk-item">
+        <div class="risk-severity risk-high">HÖG</div>
+        <div>
+          <div class="risk-name">Värderingsrisk</div>
+          <div class="risk-desc">Value score 1.83/100 (Benzinga Edge). Aktien prissätter in perfekt execution på ett flerårigt AI-supercykel-scenario. Behöver inte negativa nyheter — "less good" räcker för 20–40% kursfall. P/S-multipel är bland de högsta i tech-sektorn.</div>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-severity risk-high">HÖG</div>
+        <div>
+          <div class="risk-name">Earnings-koncentrationsrisk</div>
+          <div class="risk-desc">Q1-rapporten 13 maj är ett binärt event. Aktien är upp +14% idag och +133% YTD — bar är extremt hög. En marginal miss på ARR-guidance kan trigga -20% till -35% one-day move givet positionering.</div>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-severity risk-med">MEDEL</div>
+        <div>
+          <div class="risk-name">Konkurrensrisk — Hyperscalers</div>
+          <div class="risk-desc">AWS, Google Cloud och Azure accelererar kapacitetsexpansion. CoreWeave IPO:ade 2025 och konkurrerar direkt. Normalisering av GPU-priser vid kapacitetsutvidgning kan pressa Nebius:s pricing power.</div>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-severity risk-med">MEDEL</div>
+        <div>
+          <div class="risk-name">Integrationsrisk — Eigen AI</div>
+          <div class="risk-desc">$643M förvärv — relativt nytt (1 maj 2026). Synergier ännu ej bevisade i siffror. Risk att integration tar längre tid eller PaaS-marginalförbättringen uteblir. Ledningsfokus kan splittras från core-business.</div>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-severity risk-med">MEDEL</div>
+        <div>
+          <div class="risk-name">Skuldstruktur</div>
+          <div class="risk-desc">$4.34B konvertibelt skuldinstrument. Ger finansiell firepower men skapar press om tillväxten decelererar. Konvertibler kan driva aktieägarutspädning om kursen stiger signifikant.</div>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-severity risk-low">LÅG</div>
+        <div>
+          <div class="risk-name">Kundkoncentrationsrisk</div>
+          <div class="risk-desc">Meta ($27B) och Microsoft ($19.4B) dominerar backlog. Kontraktuell bindning ger synlighet men skapar exponering om en kund reviderar sina AI-investeringsplaner. NVIDIA-investering reducerar risken för supply-störningar.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-box-header">
+        <div class="ai-header-left">
+          <div class="ai-icon">✦</div>
+          <div>
+            <div class="ai-title">AI Riskbedömning</div>
+            <div class="ai-sub">Holistisk riskanalys inför Q1-rapporten</div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-box-body">
+        <div class="ai-content-text" id="ai-risk">Klicka nedan för en AI-driven riskbedömning av NBIS inför earnings.</div>
+        <div class="ai-actions">
+          <button class="ai-btn" onclick="fetchAI('risk')">✦ Generera riskanalys</button>
+          <button class="ai-btn ai-btn-secondary" onclick="fetchAI('risk-position')">Positioneringsråd</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="wrapper">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <strong style="color:var(--text2);">Nebius Intelligence Dashboard</strong><br>
+        Senast uppdaterad: 12 maj 2026 · 08:12 GMT+2
+      </div>
+      <div class="footer-disclaimer">
+        Inte finansiell rådgivning. All data är informativ och baserad på offentliga källor — Seeking Alpha, Goldman Sachs, BofA, Benzinga, Zacks, Investing.com. AI-analys genereras av Claude (Anthropic). Gör alltid din egen analys.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* -------- CLOCK -------- */
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('sv-SE', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* -------- TABS -------- */
+function showTab(t) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+  const tabs = ['dashboard','earnings','scenarios','analysts','risk'];
+  document.querySelectorAll('.tab-btn')[tabs.indexOf(t)]?.classList.add('active');
+  document.querySelectorAll('.nav-link')[tabs.indexOf(t)]?.classList.add('active');
+  document.getElementById('panel-'+t)?.classList.add('active');
+}
+
+/* -------- CHARTS -------- */
+const chartDefaults = {
+  color: '#8a8fa8',
+  plugins: { legend: { display: false } },
+};
+
+/* Price chart */
+(function() {
+  const labels = ['Maj-25','Jun','Jul','Aug','Sep','Okt','Nov','Dec','Jan-26','Feb','Mar','Apr','Maj-26'];
+  const nbis = [36,42,55,70,65,82,95,110,130,145,162,170,189];
+  const sp500 = [100,103,105,108,104,109,113,118,122,128,132,136,133];
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'NBIS',
+          data: nbis,
+          borderColor: '#4f8ef7',
+          backgroundColor: 'rgba(79,142,247,0.06)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'y',
+        },
+        {
+          label: 'S&P 500 (rebased)',
+          data: sp500,
+          borderColor: '#555a72',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.4,
+          borderDash: [4,3],
+          yAxisID: 'y2',
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#161820', borderColor: '#1c1f2b', borderWidth: 1,
+        titleColor: '#8a8fa8', bodyColor: '#f0f0f2',
+        callbacks: { label: ctx => ctx.dataset.label + ': $' + ctx.raw }
+      }},
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#555a72', font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#555a72', font: { size: 10 }, callback: v => '$'+v }, position: 'left' },
+        y2: { display: false }
+      }
+    }
+  });
+})();
+
+/* Revenue chart */
+(function() {
+  const labels = ['Q1 25','Q2 25','Q3 25','Q4 25','Q1 26E'];
+  const rev = [35, 68, 127, 228, 317];
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Intäkter ($M)',
+        data: rev,
+        backgroundColor: rev.map((v,i) => i===4 ? 'rgba(79,142,247,0.3)' : 'rgba(79,142,247,0.7)'),
+        borderColor: rev.map((v,i) => i===4 ? '#4f8ef7' : 'transparent'),
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#161820', borderColor: '#1c1f2b', borderWidth: 1,
+        titleColor: '#8a8fa8', bodyColor: '#f0f0f2',
+        callbacks: { label: ctx => '$'+ctx.raw+'M' }
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#555a72', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#555a72', font: { size: 10 }, callback: v => '$'+v+'M' } }
+      }
+    }
+  });
+})();
+
+/* Scenario chart */
+(function() {
+  const ctx = document.getElementById('scenarioChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Bear low','Bear high','Nuv. kurs','Analytiker snitt','GS / BofA PT','Bull low','Bull high'],
+      datasets: [{
+        label: 'Kurs ($)',
+        data: [60, 90, 189.2, 168.5, 205, 275, 450],
+        backgroundColor: ['#f87171aa','#f87171aa','#4f8ef7','#8a8fa8','#34d399aa','#34d399aa','#34d399aa'],
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#161820', borderColor: '#1c1f2b', borderWidth: 1,
+        titleColor: '#8a8fa8', bodyColor: '#f0f0f2',
+        callbacks: { label: ctx => '$'+ctx.raw }
+      }},
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#555a72', font: { size: 10 }, callback: v => '$'+v } },
+        y: { grid: { display: false }, ticks: { color: '#8a8fa8', font: { size: 11 } } }
+      }
+    }
+  });
+})();
+
+/* Analyst chart */
+(function() {
+  const ctx = document.getElementById('analystChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Wolfe (ingen PT)','Analystsnitt','Nuv. kurs','GS Buy','BofA Buy'],
+      datasets: [{
+        label: 'PT ($)',
+        data: [null, 168.5, 189.2, 205, 205],
+        backgroundColor: [null, '#8a8fa888', '#4f8ef7', '#34d399aa', '#34d399aa'],
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#161820', borderColor: '#1c1f2b', borderWidth: 1,
+        titleColor: '#8a8fa8', bodyColor: '#f0f0f2',
+        callbacks: { label: ctx => ctx.raw ? '$'+ctx.raw : 'Ingen PT' }
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8a8fa8', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, min: 0, max: 250, ticks: { color: '#555a72', font: { size: 10 }, callback: v => '$'+v } }
+      }
+    }
+  });
+})();
+
+/* Radar chart */
+(function() {
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Värderingsrisk','Tillväxtpotential','Exekutionsrisk','Kundkoncentration','Konkurrensrisk','Finansiell styrka'],
+      datasets: [{
+        label: 'NBIS Risk/Möjlighet',
+        data: [9, 9, 6, 7, 6, 7],
+        borderColor: '#4f8ef7',
+        backgroundColor: 'rgba(79,142,247,0.1)',
+        borderWidth: 2,
+        pointBackgroundColor: '#4f8ef7',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0, max: 10,
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          angleLines: { color: 'rgba(255,255,255,0.06)' },
+          ticks: { display: false },
+          pointLabels: { color: '#8a8fa8', font: { size: 11 } }
+        }
+      }
+    }
+  });
+})();
+
+/* -------- AI CALLS -------- */
+const PROMPTS = {
+  'dashboard': `Du är en erfaren aktieanalytiker specialiserad på techaktier och AI-infrastruktur. Skriv en skarp, specifik marknadsanalys på svenska (5–7 meningar) av Nebius Group (NASDAQ: NBIS) inför deras Q1 2026 rapport 13 maj.
+
+Nyckeldata: Aktien +14% idag till ATH $189.20, +133% YTD, +431% 1 år. Konsensus Q1: intäkter $316.9M (+39% QoQ), EPS -$0.81. Backlog $50B. Eigen AI förvärv $643M (1 maj). Meta $27B + Microsoft $19.4B kontrakt. NVIDIA $2B investering. ARR-mål 2026: $7–9B. Momentum score 98.76, Value score 1.83.
+
+Var konkret och faktabaserad. Inkludera: aktuell marknadsstämning, vad som driver kursen, och en specifik katalysator att bevaka. Svara BARA med analysen.`,
+
+  'dashboard-deep': `Skriv en djup (8–10 meningar) finansanalys på svenska av Nebius Group (NBIS) som inkluderar: (1) Strukturell positionering i AI-infrastruktur-marknaden, (2) Jämförelse med CoreWeave och AWS, (3) Vad IaaS→PaaS-skiftet via Eigen AI innebär för marginaler, (4) Varför value score 1.83 är en risk men inte nödvändigtvis ett säljsignal. Basera på: Backlog $50B, Meta $27B, MSFT $19.4B, NVIDIA $2B, ARR-mål $7–9B. Svara BARA med analysen.`,
+
+  'earnings': `Aktieanalytiker-roll: Skriv en konkret earnings-prognos på svenska (6–8 meningar) för Nebius (NBIS) Q1 2026 (rapport 13 maj före market open).
+
+Data: Konsensus intäkter $316.9M (+39% QoQ från $227.7M), EPS -$0.81. Earnings ESP 0.00%. Helår ARR-mål $7–9B. Q4 2025: +547% YoY. Aktien vid ATH efter +14% idag.
+
+Inkludera specifikt: (1) Vad en beat innebär för kursen (+X%?), (2) Vad en miss innebär (-X%?), (3) De tre exakta sakerna att lyssna på under earnings call. Var kvantitativ. Svara BARA med prognosen.`,
+
+  'scenarios': `Aktieanalytiker: Skriv en balanserad bear/bull/base-analys på svenska (7–9 meningar) för Nebius (NBIS).
+
+Bull ($275–450): ARR $9B+, Eigen AI PaaS-marginalexpansion, Meta/MSFT utökar, NVIDIA-validering, 42–138% 2-årsuppside.
+Base ($145–190): ARR $6–7B, inline deploy, konsolidering under ATH.
+Bear ($60–90): Value 1.83 — ingen marginal för miss, GPU-prisfall, integrationsrisk Eigen AI.
+
+Inkludera: vilken faktor är mest avgörande för vilket scenario som realiseras. Svara BARA med analysen.`,
+
+  'scenarios-q1': `Specifikt fokus: Vad händer med NBIS-kursen imorgon (13 maj 2026) under earnings? Skriv 5 meningar på svenska om tre möjliga utfall: (1) Stark beat +ARR guidance raise, (2) Inline/slight beat, (3) Miss/guidance cut. Inkludera estimerade kursrörelser i procent för varje scenario. Aktien är nu vid ATH $189.20 med momentum score 98.76. Svara BARA med analysen.`,
+
+  'analysts': `Syntetisera analytikerkonsensus för Nebius (NBIS) på svenska (5–7 meningar).
+
+Analytiker: Goldman Sachs Buy PT $205 (höjt +$45 p.g.a. Meta-kontraktet), BofA Buy PT $205 (höjt från $175 inför Q1), Wolfe Research Peer Perform ingen PT (neutral, anser aktien prissatt). 12 analytiker totalt: Strong Buy konsensus, snitt PT $168.5. SA: top neocloud pick, 42–138% 2-årsuppside. Momentum 98.76, Value 1.83.
+
+Inkludera: (1) Vad analytikerna är eniga om, (2) Var de skiljer sig, (3) Vad det faktum att nuv. kurs $189 > analytikersnittet $168.5 signalerar om marknadspositionering. Svara BARA med syntesenren.`,
+
+  'risk': `Riskanalytiker-roll: Skriv en holistisk riskbedömning på svenska (6–8 meningar) av NBIS inför Q1 2026 earnings.
+
+Primärrisk: Value score 1.83/100, aktien vid ATH. Sekundärrisker: Eigen AI $643M integrationsosäkerhet, $4.34B konvertibel skuld, konkurrens från CoreWeave/AWS/Azure. Positivt: $50B backlog, NVIDIA-validering, supply-constraint ger pricing power.
+
+Inkludera specifika triggers som kan realisera varje risk under Q2 2026. Svara BARA med riskbedömningen.`,
+
+  'risk-position': `Portföljstrateg-roll: Skriv konkreta positioneringsråd på svenska (5–7 meningar) för en investerare som funderar på NBIS. Aktien är vid ATH $189.20, earnings imorgon. Analytikersnittet är $168.5 (under nuv. kurs). Diskutera: (1) Att köpa/hålla/ta hem vinst inför earnings, (2) Storleken på en position givet risk/belöning, (3) Vad som är en rimlig stop-loss nivå. Inkludera inte finansiell rådgivning-disclaimer. Svara BARA med råden.`
+};
+
+async function fetchAI(type) {
+  const targetId = 'ai-' + type.split('-')[0];
+  const el = document.getElementById(targetId);
+  if (!el) return;
+
+  el.innerHTML = `<div class="ai-loading-wrap"><div class="ai-loading-text">Genererar analys</div><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: PROMPTS[type] || PROMPTS['dashboard'] }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    el.innerHTML = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+  } catch (err) {
+    el.innerHTML = '<span style="color:var(--red);">Kunde inte hämta AI-analys. Kontrollera nätverksanslutningen.</span>';
+  }
+}
+</script>
+</body>
+</html>
